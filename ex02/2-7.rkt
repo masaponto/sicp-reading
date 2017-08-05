@@ -13,6 +13,14 @@
     (make-interval (min p1 p2 p3 p4)
                    (max p1 p2 p3 p4))))
 
+;;(make-interval 100 6))
+
+;;(check-equal?
+;; (new-mul-interval (make-interval -3 10) (make-interval 2 10))
+;; (make-interval - 6))
+
+
+
 (define (div-interval x y)
   (mul-interval
    x
@@ -78,3 +86,97 @@
 ;;
 ;;(a*c, b*d) -> {b*d-(a*c)}/2 =
 ;;```
+
+
+;;
+(define (check-range x)
+  (cond ((and (< 0 (lower-bound x)) (< 0 (upper-bound x))) 0)
+        ((and (< (lower-bound x) 0) (< 0 (upper-bound x))) 1)
+        ((and (< (lower-bound x) 0) (< (upper-bound x) 0)) 2)))
+
+(define (new-mul-interval x y)
+  (cond
+   ((and (= (check-range x) 0) (= (check-range y) 0))
+    (make-interval (* (lower-bound x) (lower-bound y))
+                   (* (upper-bound x) (upper-bound y))))
+
+   ((and (= (check-range x) 1) (= (check-range y) 0))
+    (make-interval (* (lower-bound x) (upper-bound y))
+                   (* (upper-bound x) (upper-bound y))))
+
+   ((and (= (check-range x) 2) (= (check-range y) 0))
+    (make-interval (* (lower-bound x) (upper-bound y))
+                   (* (upper-bound x) (lower-bound y))))
+
+   ((and (= (check-range x) 0) (= (check-range y) 1))
+    (make-interval (* (upper-bound x) (lower-bound y))
+                   (* (upper-bound x) (upper-bound y))))
+
+   ((and (= (check-range x) 1) (= (check-range y) 1))
+    (let ((a (* (lower-bound x) (lower-bound y)))
+          (b (* (lower-bound x) (upper-bound y)))
+          (c (* (upper-bound x) (lower-bound y)))
+          (d (* (upper-bound x) (upper-bound y))))
+      (make-interval (min b c)
+                     (max a d))))
+
+   ((and (= (check-range x) 2) (= (check-range y) 1))
+    (make-interval (* (lower-bound x) (upper-bound y))
+                   (* (lower-bound x) (lower-bound y))))
+
+   ((and (= (check-range x) 0) (= (check-range y) 2))
+    (make-interval (* (upper-bound x) (lower-bound y))
+                   (* (lower-bound x) (upper-bound y))))
+
+   ((and (= (check-range x) 1) (= (check-range y) 2))
+    (make-interval (* (upper-bound x) (lower-bound y))
+                   (* (lower-bound x) (lower-bound y))))
+
+   ((and (= (check-range x) 2) (= (check-range y) 2))
+    (make-interval (* (upper-bound x) (upper-bound y))
+                   (* (lower-bound x) (lower-bound y))))))
+
+
+(define (test-new-mulinterval)
+  (let ((x1 (make-interval 2 3))
+        (x2 (make-interval -2 3))
+        (x3 (make-interval -2 -3)))
+
+    (check-equal? (check-range x1) 0)
+
+    (check-equal? (check-range x2) 1)
+
+    (check-equal? (check-range x3) 2)
+
+    (check-equal?
+     (upper-bound (new-mul-interval x1 x1)) 9)
+
+    (check-equal?
+     (lower-bound (new-mul-interval x1 x1)) 4)
+
+    (check-equal?
+     (upper-bound (new-mul-interval x1 x2)) 9)
+
+    (check-equal?
+     (lower-bound (new-mul-interval x1 x2)) -6)
+
+    (check-equal?
+     (upper-bound (new-mul-interval x2 x1)) 9)
+
+    (check-equal?
+     (lower-bound (new-mul-interval x2 x1)) -6)
+
+    (check-equal?
+     (upper-bound (new-mul-interval x1 x3)) -4)
+
+    (check-equal?
+     (lower-bound (new-mul-interval x1 x3)) -9)
+
+    (check-equal?
+     (upper-bound (new-mul-interval x3 x1)) -4)
+
+    (check-equal?
+     (lower-bound (new-mul-interval x3 x1)) -9)
+    ))
+
+(test-new-mulinterval)
