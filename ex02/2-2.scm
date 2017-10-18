@@ -404,3 +404,102 @@
        '(() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
        (subsets '(1 2 3))
        )
+
+
+;;
+(define (enumerate-tree tree)
+  (cond ((null? tree) '())
+        ((not (pair? tree)) (list tree))
+        (else (append (enumerate-tree (car tree))
+                      (enumerate-tree (cdr tree))))))
+
+
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
+
+
+;; 2.33
+(define (my-map p sequence)
+  (accumulate (lambda (x y) (cons (p x) y)) '() sequence))
+
+
+(test-section "ex 2.33")
+(test* "my-map1" '(2 4 6) (my-map (lambda (x) (* x 2)) '(1 2 3)))
+(test* "my-map1" '(2 4 6) (my-map (^[x] (* x 2)) '(1 2 3)))
+(test* "my-map1" '(1 1 1) (my-map (^[x] 1) '(3 9 28)))
+
+(define (my-append seq1 seq2)
+  (accumulate cons seq2 seq1))
+
+(test* "my-append1" '(1 2 3 4 5 6) (my-append '(1 2 3) '(4 5 6)))
+(test* "my-append2" '(1 2 3) (my-append '() '(1 2 3)))
+(test* "my-append3" '(1 2 3) (my-append '(1 2 3) '()))
+
+
+(define (my-length sequence)
+  (accumulate (lambda (x y) (+ y 1)) 0 sequence))
+
+(test* "my-length1" 3 (my-length '(1 2 3)))
+(test* "my-length2" 0 (my-length '()))
+(test* "my-length3" 5 (my-length '(3 6 9 12 15)))
+
+;; 2.34
+(define (horner-eval x coefficient-sequence)
+  (accumulate (lambda (this-coeff higher-terms) (+ (* higher-terms x) this-coeff))
+              0
+              coefficient-sequence))
+
+(horner-eval 2 (list 1 3 0 5 0 1))
+
+(test-section "ex 2.34")
+(test* "horner-eval" 79 (horner-eval 2 (list 1 3 0 5 0 1)))
+
+;; 2.35
+;;(define (my-count-leaves t)
+;;  (accumulate (lambda (x y) (+ y 1)) 0 (map my-count-leaves )))
+
+(define (my-count-leaves t)
+  (accumulate (lambda (x y) (+ y 1)) 0 (map (lambda (x) x) (enumerate-tree t))))
+
+(test-section "ex 2.35")
+(test* "count-leaves" 3 (my-count-leaves '(1 2 3)))
+(test* "count-leaves" 4 (my-count-leaves (cons (list 1 2) (list 3 4))))
+
+
+;; 2.36
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      '()
+      (cons (accumulate op init (map car seqs))
+            (accumulate-n op init (map cdr seqs)))))
+
+(test-section "ex 2.36")
+(test* "accumulate-n" `(22 26 30) (accumulate-n + 0 `((1 2 3) (4 5 6) (7 8 9) (10 11 12))))
+
+;; 2.37
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+(test-section "ex 2.37")
+(test* "dot-product" 26 (dot-product '(1 2 3) '(3 4 5)))
+
+(define (matrix-*-vector m v)
+  (map (lambda (w) (dot-product v w)) m))
+
+(test* "matrix-*-vector" '(14 32 50) (matrix-*-vector '((1 2 3) (4 5 6) (7 8 9)) '(1 2 3)))
+
+
+(define (transpose mat)
+  (accumulate-n cons '() mat))
+
+(test* "transpose" '((1 4 7) (2 5 8) (3 6 9)) (transpose '((1 2 3) (4 5 6) (7 8 9))))
+
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (w) (matrix-*-vector cols w)) m)))
+
+(test* "matrix-*-matrix" '((9 12) (24 33)) (matrix-*-matrix '((1 2) (4 5)) '((1 2) (4 5))))
