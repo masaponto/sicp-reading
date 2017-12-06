@@ -503,3 +503,60 @@
     (map (lambda (w) (matrix-*-vector cols w)) m)))
 
 (test* "matrix-*-matrix" '((9 12) (24 33)) (matrix-*-matrix '((1 2) (4 5)) '((1 2) (4 5))))
+
+;; 2.38
+(define (foldl op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+(define (foldr op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
+
+(foldr / 1 (list 1 2 3))
+
+;; (/ (/ (/ 3 1) 2) 1) -> 3/2
+
+(foldl / 1 (list 1 2 3))
+
+;; (/ (/ (/ 1 1) 2 ) 3) -> 1/6
+
+(define nil '())
+
+(foldr list nil (list 1 2 3))
+;; (1 (2 (3 '()))
+
+(foldl list nil (list 1 2 3))
+;; ((('() 1) 2) 3)
+;; 可換yo
+
+;;2-39
+(define (reverse-l sequence)
+  (foldl (lambda (x y) (cons y x)) nil sequence))
+
+(reverse-l '(1 2 3))
+
+(test-section "ex 2.39")
+(test* "reverse-l" '(1) (reverse-l '(1)))
+(test* "reverse-l" '(2 1) (reverse-l '(1 2)))
+(test* "reverse-l" '(3 2 1) (reverse-l '(1 2 3)))
+(test* "reverse-l" '(4 3 2 1) (reverse-l '(1 2 3 4)))
+(test* "reverse-l" '(5 4 3 2 1) (reverse-l '(1 2 3 4 5)))
+
+(define (reverse-r sequence)
+  (foldr (lambda (x y) (append y (list x))) nil sequence))
+
+(reverse-r '(1 2 3 4))
+
+(test* "reverse-r" `(22 26 30) (reverse '()))
+(test* "reverse-r" '(1) (reverse-r '(1)))
+(test* "reverse-r" '(2 1) (reverse-r '(1 2)))
+(test* "reverse-r" '(3 2 1) (reverse-r '(1 2 3)))
+(test* "reverse-r" '(4 3 2 1) (reverse-r '(1 2 3 4)))
+(test* "reverse-r" '(5 4 3 2 1) (reverse-r '(1 2 3 4 5)))
