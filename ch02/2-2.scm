@@ -560,3 +560,148 @@
 (test* "reverse-r" '(3 2 1) (reverse-r '(1 2 3)))
 (test* "reverse-r" '(4 3 2 1) (reverse-r '(1 2 3 4)))
 (test* "reverse-r" '(5 4 3 2 1) (reverse-r '(1 2 3 4 5)))
+
+
+(use math.prime)
+(define prime? small-prime?)
+
+;(accumulate
+; append nil (map (lambda (i)
+;                   (map (lambda (j) (list i j))
+;                        (enumerate-interval 1 (- i 1))))
+;                 (enumerate-interval 1 n)))
+
+(define (enumerate-interval low high)
+  (if (> low high)
+      nil
+      (cons low (enumerate-interval (+ low 1) high ))))
+
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+(define (make-pair-sum pair)
+  (list (car pair) (cadr pair) (+ (car pair) (cadr pair ))))
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum? (flatmap
+                           (lambda (i)
+                             (map (lambda (j) (list i j))
+                                  (enumerate-interval 1 (- i 1))))
+                           (enumerate-interval 1 n)))))
+(prime-sum-pairs 10)
+
+
+(define (permutations s)
+  (if (null? s)
+; 集合は空か?
+      (list nil)
+; 空集合を持つ列
+      (flatmap (lambda (x)
+                 (map (lambda (p) (cons x p))
+                      (permutations (remove x s))))
+               s)))
+
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+          sequence ))
+
+(permutations '(1 2 3))
+
+;;2.40
+
+(define (unique-pairs n)
+  (flatmap (lambda (i) (map (lambda (j) (list i j))
+                            (enumerate-interval 1 (- i 1))))
+           (enumerate-interval 1 n)))
+
+(test-section "ex 2.40")
+(test* "unique-pairs" '((2 1) (3 1) (3 2)) (unique-pairs 3))
+
+(define (my-prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum? (unique-pairs n))))
+
+(test* "my-prime-sum-pairs" (prime-sum-pairs 3) (my-prime-sum-pairs 3))
+
+(define (unique-triple n)
+  (flatmap (^[i]
+              (flatmap (^[j]
+                         (map (^[k] (list k j i))
+                              (enumerate-interval 1 (- j 1))))
+                       (enumerate-interval 1 (- i 1))))
+           (enumerate-interval 1 n)))
+
+(test* "unique-triple" `((1 2 3) (1 2 4) (1 3 4) (2 3 4)) (unique-triple 4))
+
+(define (s-sum-triples n s)
+  (filter (^[x] (= (accumulate + 0 x) s)) (unique-triple n)))
+
+(test* "s-sum-triples" '((1 3 4) (1 2 5)) (s-sum-triples 5 8))
+
+;; 2-42
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions) (safe? k positions))
+         (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+                   (adjoin-position
+                    new-row k rest-of-queens))
+                 (enumerate-interval 1 board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size))
+
+(define empty-board '())
+
+(define (adjoin-position new-row k rest-of-queens)
+  (append rest-of-queens (list (cons new-row k))))
+
+(define (safe? k positions)
+  (cond ((not (line-safe? k positions same-row?)) #f)
+        ((not (line-safe? k positions same-diagonal?)) #f)
+        (else #t)))
+
+(define (line-safe? k positions same?)
+  (let ((new (list-ref positions (- k 1))))
+    (every (lambda (pos) (not (same? pos new)))
+           (take positions (- k 1)))))
+
+(define (same-row? pos-a pos-b)
+  (= (car pos-a) (car pos-b)))
+
+(define (same-diagonal? pos-a pos-b)
+  (let ((diff (abs (- (cdr pos-a) (cdr pos-b)))))
+    (or
+     (= (car pos-a) (- (car pos-b) diff))
+     (= (car pos-a) (+ (car pos-b) diff)))))
+
+(test-section "ex 2.42")
+(test* "adjoin-position" '((1 . 1) (3 . 2) (4 . 3))
+       (adjoin-position 4 3 '((1 . 1) (3 . 2))))
+
+(test* "same-row?" #t (same-row? '(1 . 1) '(1 . 2)))
+(test* "same-row?" #f (same-row? '(1 . 1) '(3 . 2)))
+(test* "same-diagonal?" #t (same-diagonal? '(2 . 2) '(3 . 1)))
+(test* "same-diagonal?" #t (same-diagonal? '(2 . 2) '(3 . 3)))
+(test* "column-safe?" #t
+       (line-safe? 3 '((1 . 1) (3 . 2) (4 . 3)) same-row?))
+(test* "column-safe?" #f
+       (line-safe? 3 '((1 . 1) (3 . 2) (3 . 3)) same-row?))
+
+(test* "diagonal-safe?" #f
+       (line-safe? 3 '((1 . 1) (3 . 2) (3 . 3)) same-diagonal?))
+(test* "diagonal-safe?" #t
+       (line-safe? 3 '((3 . 1) (7 . 2) (2 . 3)) same-diagonal?))
+
+(test* "safe?" #t (safe? 1 '((1 . 1))))
+(test* "safe?" #t (safe? 3 '((2 . 1) (4 . 2) (1 . 3) (3 . 4))))
+
+(define sample-ans-queen '((3 . 1) (7 . 2) (2 . 3) (8 . 4) (5 . 5) (1 . 6) (4 . 7) (6 . 8)))
+(test* "queens" #t (not (null? (member sample-ans-queen (queens 8)))))
