@@ -1,9 +1,11 @@
 #lang racket
 
+;; How to evaluate
 ;; C-c C-k
 
 (require (planet "sicp.ss" ("soegaard" "sicp.plt" 2 1)))
 
+;; Reference: http://uents.hatenablog.com/entry/sicp/011-ch2.2.4.1.md
 (define wave
   (segments->painter
    (list (make-segment (make-vect 0.2 0.0) (make-vect 0.4 0.4))
