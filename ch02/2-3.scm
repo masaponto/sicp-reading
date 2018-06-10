@@ -59,6 +59,7 @@
                         (deriv (multiplicand exp) var))
           (make-product (deriv (multiplier exp) var)
                         (multiplicand exp))))
+
         ((exponentiation? exp)
          (make-product
           (make-product (exponent exp)
@@ -66,6 +67,7 @@
                          (base exp)
                          (- (exponent exp) 1)))
           (deriv (base exp) var)))
+
         (else
          (error "unknown expression type: DERIV" exp))))
 
@@ -207,7 +209,7 @@
        '(+ (* x y) (* y (+ x 3)))
        (deriv '(* x y (+ x 3)) 'x))
 
-;; 2.58
+;; 2.58 a
 
 (define (sum? x) (and (pair? x) (eq? (cadr x) '+)))
 
@@ -283,3 +285,68 @@
 
 (test* "deriv" 'x
        (deriv '((3 * x) + (y * x)) 'y))
+
+(test* "deriv" '1
+       (deriv '(1 * x + y * 1) 'x))
+
+;; 2.58 b
+
+(define (sum? s)
+  (bin-expr-of? '+ s))
+
+(define (product? s)
+  (bin-expr-of? '* s))
+
+(define (bin-expr-of? op expr)
+  (and
+   (pair? expr)
+   (pair? (cdr expr))
+   (or
+    (eq? (cadr expr) op)
+    (bin-expr-of? op (cddr expr)))))
+
+(define (addend exp)
+  (define (iter op rest left)
+    (cond
+     ((null? rest)
+      (error "operator not found: " op " in " (reverse left)))
+     ((eq? (car rest) op)
+      (left))
+     (else (iter
+            op
+            (append rest (car rest))
+            (cdr rest)))))
+  (iter '+ (cdr exp) (car exp)))
+
+
+;;(define (augend s)
+;;  (if (= (length s) 3)
+;;      (caddr s)
+;;      (cddr s)))
+;;
+;;(define (multiplicand p)
+;;  (if (= (length p) 3)
+;;      (caddr p)
+;;      (cddr p)))
+;;
+
+(test* "deriv" 1
+       (deriv '(1 + x) 'x))
+
+(test* "deriv" 'y
+       (deriv '(x * y) 'x))
+
+(test* "deriv" '(3 + y)
+       (deriv '((3 * x) + (y * x)) 'x))
+
+(test* "deriv" 'x
+       (deriv '((3 * x) + (y * x)) 'y))
+
+(test* "deriv" '0
+       (deriv '(1 + 1 + 1) 'x))
+
+(test* "deriv" '1
+       (deriv '(1 * x + y * 1) 'x))
+
+(test* "deriv" '4
+       (deriv '(x + 3 * (x + y + 2)) 'x))
